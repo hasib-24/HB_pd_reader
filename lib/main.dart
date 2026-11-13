@@ -72,9 +72,9 @@ class _HomeState extends State<Home> {
 
   // ---------------- open / save ----------------
   Future<void> _pick() async {
-    final r = await FilePicker.platform.pickFiles(
+    final f = await FilePicker.pickFile(
         type: FileType.custom, allowedExtensions: ['pdf', 'hb']);
-    final p = r?.files.single.path;
+    final p = f?.path;
     if (p != null) await _openPath(p);
   }
 
@@ -121,14 +121,11 @@ class _HomeState extends State<Home> {
   Future<void> _saveAs() async {
     final pr = project;
     if (pr == null) return;
-    var p = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save .hb file',
-        fileName: '${pr.name}.hb',
-        type: FileType.custom,
-        allowedExtensions: ['hb']);
-    if (p == null) return;
-    if (!p.toLowerCase().endsWith('.hb')) p = '$p.hb';
-    _msg(await pr.saveNow(p) ? 'Saved' : 'Save failed');
+    final dir =
+        await FilePicker.getDirectoryPath(dialogTitle: 'Choose a folder for the .hb file');
+    if (dir == null) return;
+    final p = '$dir${Platform.pathSeparator}${pr.name}.hb';
+    _msg(await pr.saveNow(p) ? 'Saved: $p' : 'Save failed');
   }
 
   Future<void> _export() async {
@@ -174,13 +171,10 @@ class _HomeState extends State<Home> {
       ),
     );
     if (ok != true) return;
-    var path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Export PDF',
-        fileName: '${pr.name}-notes.pdf',
-        type: FileType.custom,
-        allowedExtensions: ['pdf']);
-    if (path == null) return;
-    if (!path.toLowerCase().endsWith('.pdf')) path = '$path.pdf';
+    final dir =
+        await FilePicker.getDirectoryPath(dialogTitle: 'Choose a folder for the PDF');
+    if (dir == null) return;
+    final path = '$dir${Platform.pathSeparator}${pr.name}-notes.pdf';
 
     final prog = ValueNotifier<double>(0);
     showDialog<void>(
@@ -212,11 +206,9 @@ class _HomeState extends State<Home> {
 
   // ---------------- notes ----------------
   Future<Uint8List?> _pickImage() async {
-    final r = await FilePicker.platform
-        .pickFiles(type: FileType.image, withData: true);
-    final f = r?.files.single;
+    final f = await FilePicker.pickFile(type: FileType.image);
     if (f == null) return null;
-    return f.bytes ?? (f.path != null ? await File(f.path!).readAsBytes() : null);
+    return f.path != null ? File(f.path!).readAsBytes() : f.readAsBytes();
   }
 
   Future<void> _paste() async {

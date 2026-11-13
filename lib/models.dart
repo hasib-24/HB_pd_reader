@@ -338,9 +338,11 @@ class Project extends ChangeNotifier {
   Future<void> addImageSticky(String pageId, Uint8List bytes) async {
     final ref = page(pageId);
     if (ref == null) return;
-    final img = await ui.decodeImageFromList(bytes);
-    final ar = img.height / img.width;
-    img.dispose();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final ar = frame.image.height / frame.image.width;
+    frame.image.dispose();
+    codec.dispose();
     const w = 0.4;
     final h = (w * ar * ref.aspect).clamp(0.05, 0.9).toDouble();
     stickies.add(Sticky(
